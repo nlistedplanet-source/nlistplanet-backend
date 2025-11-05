@@ -233,4 +233,68 @@ router.post('/verify-mobile-otp', async (req, res) => {
   }
 });
 
+// Forgot Password - send OTP
+router.post('/forgot-password/send-otp', async (req, res) => {
+  try {
+    const { email, mobile } = req.body;
+
+    if (!email || !mobile) {
+      return res.status(400).json({ error: 'Email and mobile are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || user.mobile !== mobile) {
+      return res.status(400).json({ error: 'Email and mobile do not match' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.mobileOTP = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    await sendSMSOTP(mobile, otp);
+
+    res.json({ success: true, message: 'OTP sent to registered mobile number' });
+  } catch (error) {
+    console.error('Forgot password send OTP error:', error);
+    res.status(500).json({ error: 'Failed to send reset OTP' });
+  }
+});
+
+// Forgot Password - reset
+router.post('/forgot-password/reset', async (req, res) => {
+  try {
+    const { email, mobile, otp, newPassword } = req.body;
+
+    if (!email || !mobile || !otp || !newPassword) {
+      return res.status(400).json({ error: 'Email, mobile, OTP, and new password are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || user.mobile !== mobile) {
+      return res.status(400).json({ error: 'Email and mobile do not match' });
+    }
+
+    if (!user.mobileOTP || user.mobileOTP !== otp) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    if (user.otpExpiry < new Date()) {
+      return res.status(400).json({ error: 'OTP expired' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.mobileOTP = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Forgot password reset error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 module.exports = router;
