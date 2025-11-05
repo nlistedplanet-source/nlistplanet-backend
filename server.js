@@ -5,11 +5,31 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+// CORS configuration to support production + preview deployments
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL_2,
+  process.env.FRONTEND_URL_3,
+  'http://localhost:3000',
+  'https://nlistplanet.vercel.app'
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    const vercelPreviewRegex = /^https:\/\/nlistplanet-[a-z0-9-]+\.vercel\.app$/i;
+    if (allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
   credentials: true
-}));
+};
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
