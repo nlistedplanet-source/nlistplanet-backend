@@ -7,7 +7,7 @@ const authMiddleware = require('../middleware/auth');
 router.get('/', async (req, res) => {
   try {
     const listings = await Listing.find()
-      .populate('userId', 'userId name email')
+      .populate('userId', 'userId name email username')
       .sort({ createdAt: -1 });
     res.json(listings);
   } catch (error) {
