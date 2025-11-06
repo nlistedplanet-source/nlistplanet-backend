@@ -37,6 +37,28 @@ router.post('/sell', authMiddleware, async (req, res) => {
   }
 });
 
+// Create buy listing
+router.post('/buy', authMiddleware, async (req, res) => {
+  try {
+    const { company, isin, price, shares } = req.body;
+
+    const listing = new Listing({
+      company,
+      isin,
+      type: 'buy',
+      price,
+      shares,
+      userId: req.user.id
+    });
+
+    await listing.save();
+    res.status(201).json({ success: true, listing });
+  } catch (error) {
+    console.error('Create buy listing error:', error);
+    res.status(500).json({ error: 'Failed to create buy listing' });
+  }
+});
+
 // Place bid on listing
 router.post('/:id/bid', authMiddleware, async (req, res) => {
   try {
