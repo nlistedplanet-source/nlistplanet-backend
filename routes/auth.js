@@ -11,6 +11,37 @@ const generateUserId = async () => {
   return `USR${String(count + 1).padStart(3, '0')}`;
 };
 
+// Generate Funny Username
+const generateFunnyUsername = () => {
+  const prefixes = [
+    'ironman', 'batman', 'superman', 'spiderman', 'thor', 'hulk', 'captainamerica', 'blackwidow',
+    'rajnikant', 'salmankhan', 'shahrukhkhan', 'amitabhbachchan', 'akshaykumar', 'hrithikroshan',
+    'deepikapadukone', 'priyankachopra', 'katrinakaif', 'aliabhatt',
+    'sherlock', 'jonsnow', 'tyrionlannister', 'tonystark', 'brucewayne',
+    'delhi', 'mumbai', 'bangalore', 'hyderabad', 'chennai', 'kolkata', 'pune', 'goa',
+    'wolf', 'tiger', 'lion', 'eagle', 'falcon', 'panther', 'cobra', 'dragon',
+    'ninja', 'samurai', 'warrior', 'knight', 'viking', 'spartan',
+    'einstein', 'newton', 'tesla', 'edison', 'darwin',
+    'crypto', 'stock', 'trader', 'investor', 'whale', 'bull', 'bear',
+    'rockstar', 'legend', 'champion', 'master', 'boss', 'king', 'queen',
+    'pixel', 'byte', 'quantum', 'matrix', 'cyber', 'tech', 'digital'
+  ];
+  
+  const suffixes = [
+    'trader', 'investor', 'pro', 'master', 'king', 'queen', 'boss', 'legend',
+    'warrior', 'hero', 'star', 'genius', 'wizard', 'ninja', 'samurai',
+    'returns', 'gains', 'profits', 'wealth', 'rich', 'millionaire',
+    'hustler', 'grinder', 'player', 'gamer', 'winner', 'champion',
+    'alpha', 'sigma', 'omega', 'prime', 'elite', 'supreme',
+    '_001', '_247', '_360', '_007', '_420', '_786', '_999'
+  ];
+  
+  const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+  
+  return `@${randomPrefix}_${randomSuffix}`;
+};
+
 // Sign Up
 router.post('/signup', async (req, res) => {
   try {
@@ -27,10 +58,21 @@ router.post('/signup', async (req, res) => {
 
     // Generate User ID
     const userId = await generateUserId();
+    
+    // Generate unique funny username
+    let username = generateFunnyUsername();
+    let usernameExists = await User.findOne({ username });
+    
+    // Keep generating until we get a unique username
+    while (usernameExists) {
+      username = generateFunnyUsername();
+      usernameExists = await User.findOne({ username });
+    }
 
     // Create user
     const user = new User({
       userId,
+      username,
       name,
       email,
       password: hashedPassword,
