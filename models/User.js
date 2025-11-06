@@ -34,10 +34,6 @@ const userSchema = new mongoose.Schema({
     enum: ['individual', 'hni', 'institutional', 'admin'],
     default: 'individual'
   },
-  walletBalance: {
-    type: Number,
-    default: 50000
-  },
   roles: [{
     type: String,
     enum: ['buyer', 'seller', 'admin']

@@ -59,7 +59,6 @@ router.post('/signup', async (req, res) => {
         email: user.email,
         userType: user.userType,
         roles: user.roles,
-        walletBalance: user.walletBalance,
         emailVerified: user.emailVerified,
         mobileVerified: user.mobileVerified
       }
@@ -105,7 +104,6 @@ router.post('/signin', async (req, res) => {
         email: user.email,
         userType: user.userType,
         roles: user.roles,
-        walletBalance: user.walletBalance,
         emailVerified: user.emailVerified,
         mobileVerified: user.mobileVerified
       }
