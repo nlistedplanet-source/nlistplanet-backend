@@ -30,6 +30,10 @@ router.post('/sell', authMiddleware, async (req, res) => {
     });
 
     await listing.save();
+    
+    // Populate userId with username, name, email before sending response
+    await listing.populate('userId', 'userId name email username');
+    
     res.status(201).json({ success: true, listing });
   } catch (error) {
     console.error('Create listing error:', error);
@@ -52,6 +56,10 @@ router.post('/buy', authMiddleware, async (req, res) => {
     });
 
     await listing.save();
+    
+    // Populate userId with username, name, email before sending response
+    await listing.populate('userId', 'userId name email username');
+    
     res.status(201).json({ success: true, listing });
   } catch (error) {
     console.error('Create buy listing error:', error);
