@@ -6,6 +6,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true // Allows null/undefined values but enforces uniqueness when present
+  },
   name: {
     type: String,
     required: true

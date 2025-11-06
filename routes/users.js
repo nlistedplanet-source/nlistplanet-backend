@@ -32,7 +32,8 @@ router.patch('/:id', authMiddleware, async (req, res) => {
     const { username, name, mobile } = req.body;
     
     // Verify user is updating their own profile or is admin
-    if (req.user.userId !== req.params.id && req.user.role !== 'admin') {
+    // req.user.id is the MongoDB _id from JWT token
+    if (req.user.id !== req.params.id && !req.user.roles?.includes('admin')) {
       return res.status(403).json({ success: false, message: 'Unauthorized to update this profile' });
     }
 
@@ -44,10 +45,16 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       }
     }
 
+    // Prepare update object (only include fields that are provided)
+    const updateFields = {};
+    if (username !== undefined) updateFields.username = username;
+    if (name !== undefined) updateFields.name = name;
+    if (mobile !== undefined) updateFields.mobile = mobile;
+
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { $set: { username, name, mobile } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     ).select('-password -emailOTP -mobileOTP');
 

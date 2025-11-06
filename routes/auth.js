@@ -54,10 +54,14 @@ router.post('/signup', async (req, res) => {
       user: {
         id: user._id,
         userId: user.userId,
+        username: user.username,
         name: user.name,
         email: user.email,
         userType: user.userType,
-        roles: user.roles
+        roles: user.roles,
+        walletBalance: user.walletBalance,
+        emailVerified: user.emailVerified,
+        mobileVerified: user.mobileVerified
       }
     });
   } catch (error) {
@@ -96,6 +100,7 @@ router.post('/signin', async (req, res) => {
       user: {
         id: user._id,
         userId: user.userId,
+        username: user.username,
         name: user.name,
         email: user.email,
         userType: user.userType,
