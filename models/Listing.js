@@ -14,10 +14,14 @@ const listingSchema = new mongoose.Schema({
     enum: ['sell', 'buy'],
     required: true
   },
-  price: {
+  // Seller posted price (original)
+  price: { type: Number },
+  sellerPrice: {
     type: Number,
     required: true
   },
+  // Price shown to buyers (sellerPrice + platform fee)
+  displayPrice: { type: Number },
   shares: {
     type: Number,
     required: true
@@ -29,7 +33,7 @@ const listingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'pending_admin_approval', 'approved', 'closed'],
+    enum: ['active', 'pending', 'pending_admin_approval', 'approved', 'pending_closure', 'complete', 'rejected', 'closed'],
     default: 'active'
   },
   bids: [{
@@ -38,6 +42,7 @@ const listingSchema = new mongoose.Schema({
       ref: 'User'
     },
     price: Number,
+    displayPrice: Number,
     quantity: Number,
     counterPrice: Number,
     status: {
@@ -50,7 +55,35 @@ const listingSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  acceptedBid: mongoose.Schema.Types.ObjectId
+  acceptedBid: mongoose.Schema.Types.ObjectId,
+  // Proof uploads for transaction closure
+  proofs: {
+    seller: {
+      dpSlip: { type: String },              // File URL/path
+      transferConfirmation: { type: String }, // File URL/path
+      uploadedAt: { type: Date }
+    },
+    buyer: {
+      paymentScreenshot: { type: String },   // File URL/path
+      utr: { type: String },                 // UTR number
+      uploadedAt: { type: Date }
+    }
+  },
+  // Admin rejection tracking
+  rejectionReason: { type: String },
+  rejectedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rejectedAt: { type: Date },
+  // Trade reference (when both parties accept)
+  tradeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Trade'
+  }
+  // Boosting/Featured listing
+  boosted: { type: Boolean, default: false },
+  boostedUntil: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Listing', listingSchema);

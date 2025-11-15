@@ -40,6 +40,7 @@ app.use('/api/listings', require('./routes/listings'));
 app.use('/api/bids', require('./routes/bids'));
 app.use('/api/companies', require('./routes/companies'));
 app.use('/api/portfolio', require('./routes/portfolio'));
+app.use('/api/trades', require('./routes/trades'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
