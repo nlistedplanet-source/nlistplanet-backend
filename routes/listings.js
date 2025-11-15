@@ -204,7 +204,8 @@ router.post('/:id/bid/:bidId/accept', authMiddleware, async (req, res) => {
 
     const bid = listing.bids.find(b => (b._id || b.id).toString() === bidId.toString());
     const isSeller = listing.userId.toString() === req.user.id;
-    const isBuyer = bid.userId.toString() === req.user.id;
+    const bidUserId = bid && bid.userId ? bid.userId.toString() : null;
+    const isBuyer = bidUserId ? bidUserId === req.user.id : false;
     if (!(isSeller || isBuyer)) return res.status(403).json({ error: 'Unauthorized' });
 
     const update = {};
