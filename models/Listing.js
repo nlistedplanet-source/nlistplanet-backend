@@ -15,10 +15,12 @@ const listingSchema = new mongoose.Schema({
     required: true
   },
   // Seller posted price (original)
-  price: { type: Number },
-  sellerPrice: {
+  price: { 
     type: Number,
     required: true
+  },
+  sellerPrice: {
+    type: Number
   },
   // Price shown to buyers (sellerPrice + platform fee)
   displayPrice: { type: Number },
