@@ -3,6 +3,26 @@ const router = express.Router();
 const Listing = require('../models/Listing');
 const authMiddleware = require('../middleware/auth');
 
+const computeDisplayPrice = (amount = 0) => {
+  const base = Number(amount) || 0;
+  let withFee = Number((base * 1.02).toFixed(2));
+  if (base >= 10) {
+    withFee = Math.ceil(withFee);
+  }
+  return withFee;
+};
+
+const buildFeeBreakdown = (amount = 0) => {
+  const base = Number(amount) || 0;
+  const finalPrice = computeDisplayPrice(base);
+  const fee = Number((finalPrice - base).toFixed(2));
+  return {
+    basePrice: base,
+    fee,
+    finalPrice
+  };
+};
+
 // Get all listings
 router.get('/', async (req, res) => {
   try {
@@ -20,12 +40,8 @@ router.get('/', async (req, res) => {
 router.post('/sell', authMiddleware, async (req, res) => {
   try {
     const { company, isin, price, shares } = req.body;
-    // Platform fee calculation: 2%
     const basePrice = Number(price);
-    let displayPrice = Number((basePrice * 1.02).toFixed(2));
-    if (basePrice >= 10) {
-      displayPrice = Math.ceil(displayPrice);
-    }
+    const feeBreakdown = buildFeeBreakdown(basePrice);
 
     const listing = new Listing({
       company,
@@ -33,7 +49,8 @@ router.post('/sell', authMiddleware, async (req, res) => {
       type: 'sell',
       price: basePrice,
       sellerPrice: basePrice,
-      displayPrice,
+      displayPrice: feeBreakdown.finalPrice,
+      feeBreakdown,
       shares,
       userId: req.user.id
     });
@@ -86,13 +103,8 @@ router.post('/:id/bid', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Listing not found' });
     }
 
-    // Compute display price for bid relative to seller's listing price
-    const listingSellerPrice = listing.sellerPrice || listing.price || 0;
     const baseBidPrice = Number(price);
-    let bidDisplayPrice = Number((baseBidPrice * 1.02).toFixed(2));
-    if (baseBidPrice >= 10) {
-      bidDisplayPrice = Math.ceil(bidDisplayPrice);
-    }
+    const bidDisplayPrice = computeDisplayPrice(baseBidPrice);
     listing.bids.push({
       userId: req.user.id,
       price: baseBidPrice,
@@ -122,11 +134,15 @@ router.post('/:id/bid/:bidId/counter', authMiddleware, async (req, res) => {
     if (listing.userId.toString() !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
 
     // Update bid in place using positional operator
+    const counterBasePrice = Number(counterPrice);
+    const counterDisplayPrice = computeDisplayPrice(counterBasePrice);
+
     const updated = await Listing.findOneAndUpdate(
       { _id: listingId, 'bids._id': bidId },
       {
         $set: {
-          'bids.$.counterPrice': counterPrice,
+          'bids.$.counterPrice': counterBasePrice,
+          'bids.$.counterDisplayPrice': counterDisplayPrice,
           'bids.$.quantity': quantity || listing.bids.find(b => b._id == bidId).quantity,
           'bids.$.status': 'counter_offered',
           'bids.$.counterBy': 'seller',
@@ -165,11 +181,15 @@ router.post('/:id/bid/:bidId/counter/respond', authMiddleware, async (req, res) 
     // Only the bid owner (buyer) can respond
     if (bid.userId.toString() !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
 
+    const counterBasePrice = Number(counterPrice);
+    const counterDisplayPrice = computeDisplayPrice(counterBasePrice);
+
     const updated = await Listing.findOneAndUpdate(
       { _id: listingId, 'bids._id': bidId },
       {
         $set: {
-          'bids.$.counterPrice': counterPrice,
+          'bids.$.counterPrice': counterBasePrice,
+          'bids.$.counterDisplayPrice': counterDisplayPrice,
           'bids.$.quantity': quantity || bid.quantity,
           'bids.$.status': 'counter_offered',
           'bids.$.counterBy': 'buyer',
@@ -226,9 +246,7 @@ router.post('/:id/bid/:bidId/accept', authMiddleware, async (req, res) => {
       // Create trade automatically
       const Trade = require('../models/Trade');
       const basePrice = Number(refreshedBid.counterPrice || refreshedBid.price);
-      let finalPrice = Number((basePrice * 1.02).toFixed(2));
-      if (basePrice >= 10) finalPrice = Math.ceil(finalPrice);
-      const fee = Number((finalPrice - basePrice).toFixed(2));
+      const feeBreakdown = buildFeeBreakdown(basePrice);
       const tradeNumber = 'TRD-' + Date.now();
       const trade = new Trade({
         listingId: listing._id,
@@ -238,9 +256,9 @@ router.post('/:id/bid/:bidId/accept', authMiddleware, async (req, res) => {
         isin: listing.isin,
         price: basePrice,
         quantity: refreshedBid.quantity,
-        totalAmount: finalPrice * refreshedBid.quantity,
+        totalAmount: feeBreakdown.finalPrice * refreshedBid.quantity,
         tradeNumber,
-        feeBreakdown: { basePrice, fee, finalPrice },
+        feeBreakdown,
         buyerConfirmed: false,
         sellerConfirmed: true,
         status: 'pending_closure',
@@ -252,6 +270,8 @@ router.post('/:id/bid/:bidId/accept', authMiddleware, async (req, res) => {
       updated.tradeId = trade._id;
       updated.status = 'pending_closure';
       updated.acceptedBid = bidId;
+      updated.feeBreakdown = feeBreakdown;
+      updated.displayPrice = feeBreakdown.finalPrice;
       await updated.save();
       return res.json({ success: true, listing: updated, trade });
     }
@@ -340,9 +360,7 @@ router.post('/:id/create-trade', authMiddleware, async (req, res) => {
     // Create new Trade
     // Compute fee breakdown and trade number
     const basePrice = Number(price);
-    let finalPrice = Number((basePrice * 1.02).toFixed(2));
-    if (basePrice >= 10) finalPrice = Math.ceil(finalPrice);
-    const fee = Number((finalPrice - basePrice).toFixed(2));
+    const feeBreakdown = buildFeeBreakdown(basePrice);
 
     const tradeNumber = 'TRD-' + Date.now();
 
@@ -354,9 +372,9 @@ router.post('/:id/create-trade', authMiddleware, async (req, res) => {
       isin: listing.isin,
       price: basePrice,
       quantity: quantity,
-      totalAmount: finalPrice * quantity,
+      totalAmount: feeBreakdown.finalPrice * quantity,
       tradeNumber,
-      feeBreakdown: { basePrice, fee, finalPrice },
+      feeBreakdown,
       buyerConfirmed: false,
       sellerConfirmed: true,
       status: 'pending_closure',
@@ -369,6 +387,8 @@ router.post('/:id/create-trade', authMiddleware, async (req, res) => {
     listing.tradeId = trade._id;
     listing.status = 'pending_closure';
     listing.acceptedBid = bidId;
+    listing.displayPrice = feeBreakdown.finalPrice;
+    listing.feeBreakdown = feeBreakdown;
     await listing.save();
     
     res.json({ success: true, trade, listing });

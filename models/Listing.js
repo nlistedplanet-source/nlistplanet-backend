@@ -22,6 +22,11 @@ const listingSchema = new mongoose.Schema({
   },
   // Price shown to buyers (sellerPrice + platform fee)
   displayPrice: { type: Number },
+  feeBreakdown: {
+    basePrice: { type: Number },
+    fee: { type: Number },
+    finalPrice: { type: Number }
+  },
   shares: {
     type: Number,
     required: true
