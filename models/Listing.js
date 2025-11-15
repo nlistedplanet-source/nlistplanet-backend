@@ -46,6 +46,9 @@ const listingSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    bidder: String,
+    bidderName: String,
+    bidderId: mongoose.Schema.Types.ObjectId,
     price: Number,
     displayPrice: Number,
     quantity: Number,
@@ -65,7 +68,7 @@ const listingSchema = new mongoose.Schema({
     bothAcceptedAt: { type: Date },
     status: {
       type: String,
-      enum: ['pending', 'counter_offered', 'accepted', 'rejected', 'counter_accepted_by_bidder'],
+      enum: ['pending', 'counter_offered', 'accepted', 'rejected', 'counter_accepted_by_bidder', 'both_accepted'],
       default: 'pending'
     },
     createdAt: {

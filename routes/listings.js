@@ -96,27 +96,46 @@ router.post('/buy', authMiddleware, async (req, res) => {
 // Place bid on listing
 router.post('/:id/bid', authMiddleware, async (req, res) => {
   try {
-    const { price, quantity } = req.body;
+    const { price, quantity, bidder, bidderName } = req.body;
 
     const listing = await Listing.findById(req.params.id);
     if (!listing) {
       return res.status(404).json({ error: 'Listing not found' });
     }
 
+    // Validate quantity doesn't exceed available shares
+    if (Number(quantity) > listing.shares) {
+      return res.status(400).json({ 
+        error: `Quantity exceeds available shares. Only ${listing.shares} shares available.` 
+      });
+    }
+
     const baseBidPrice = Number(price);
     const bidDisplayPrice = computeDisplayPrice(baseBidPrice);
+    
     listing.bids.push({
       userId: req.user.id,
       price: baseBidPrice,
       displayPrice: bidDisplayPrice,
-      quantity,
-      status: 'pending'
+      quantity: Number(quantity),
+      bidder: bidder || req.user.email,
+      bidderName: bidderName || req.user.name || req.user.username,
+      status: 'pending',
+      createdAt: new Date()
     });
 
     await listing.save();
+    
+    // Populate userId before returning
+    await listing.populate('userId', 'userId name email username');
+    
     res.json({ success: true, listing });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to place bid' });
+    console.error('Place bid error:', error);
+    res.status(500).json({ 
+      error: 'Failed to place bid',
+      message: error.message 
+    });
   }
 });
 
