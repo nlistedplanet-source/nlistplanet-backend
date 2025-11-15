@@ -3,35 +3,42 @@ const router = express.Router();
 const Trade = require('../models/Trade');
 const Listing = require('../models/Listing');
 const authMiddleware = require('../middleware/auth');
+const adminMiddleware = require('../middleware/admin');
 const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 
-// Configure multer for file uploads
+// Ensure upload directory exists
+const uploadDir = 'uploads/proofs';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/proofs/');
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: function (req, file, cb) {
     const allowedTypes = /jpeg|jpg|png|pdf/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
     if (mimetype && extname) {
       return cb(null, true);
-    } else {
-      cb(new Error('Only images (JPEG, PNG) and PDF files are allowed'));
     }
+    return cb(new Error('Only images (JPEG, PNG) and PDF files are allowed'));
   }
 });
+
+// Multer configured above
 
 // Get all trades for current user
 router.get('/my-trades', authMiddleware, async (req, res) => {
@@ -155,7 +162,7 @@ router.post('/:id/buyer-proofs', authMiddleware, upload.single('paymentScreensho
 });
 
 // Admin: Verify and complete trade
-router.post('/:id/verify', authMiddleware, async (req, res) => {
+router.post('/:id/verify', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // TODO: Add admin role check middleware
     // if (req.user.role !== 'admin') {
@@ -199,7 +206,7 @@ router.post('/:id/verify', authMiddleware, async (req, res) => {
 });
 
 // Admin: Reject trade with reason
-router.post('/:id/reject', authMiddleware, async (req, res) => {
+router.post('/:id/reject', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // TODO: Add admin role check middleware
     const { reason } = req.body;

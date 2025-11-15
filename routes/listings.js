@@ -108,6 +108,161 @@ router.post('/:id/bid', authMiddleware, async (req, res) => {
   }
 });
 
+// Seller creates a counter offer for a bid
+router.post('/:id/bid/:bidId/counter', authMiddleware, async (req, res) => {
+  try {
+    const { counterPrice, quantity } = req.body;
+    const listingId = req.params.id;
+    const bidId = req.params.bidId;
+
+    const listing = await Listing.findOne({ _id: listingId, 'bids._id': bidId });
+    if (!listing) return res.status(404).json({ error: 'Listing or bid not found' });
+
+    // Only seller of listing can create counter on bids
+    if (listing.userId.toString() !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
+
+    // Update bid in place using positional operator
+    const updated = await Listing.findOneAndUpdate(
+      { _id: listingId, 'bids._id': bidId },
+      {
+        $set: {
+          'bids.$.counterPrice': counterPrice,
+          'bids.$.quantity': quantity || listing.bids.find(b => b._id == bidId).quantity,
+          'bids.$.status': 'counter_offered',
+          'bids.$.counterBy': 'seller',
+          'bids.$.buyerAccepted': false,
+          'bids.$.sellerAccepted': false
+        },
+        $push: {
+          'bids.$.counterHistory': {
+            price: counterPrice,
+            by: 'seller',
+            at: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    return res.json({ success: true, listing: updated });
+  } catch (err) {
+    console.error('Counter offer error:', err);
+    return res.status(500).json({ error: 'Failed to set counter offer' });
+  }
+});
+
+// Buyer responds with counter to a seller counter or counter again
+router.post('/:id/bid/:bidId/counter/respond', authMiddleware, async (req, res) => {
+  try {
+    const { counterPrice, quantity } = req.body;
+    const listingId = req.params.id;
+    const bidId = req.params.bidId;
+
+    const listing = await Listing.findOne({ _id: listingId, 'bids._id': bidId });
+    if (!listing) return res.status(404).json({ error: 'Listing or bid not found' });
+
+    const bid = listing.bids.find(b => (b._id || b.id).toString() === bidId.toString());
+    // Only the bid owner (buyer) can respond
+    if (bid.userId.toString() !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
+
+    const updated = await Listing.findOneAndUpdate(
+      { _id: listingId, 'bids._id': bidId },
+      {
+        $set: {
+          'bids.$.counterPrice': counterPrice,
+          'bids.$.quantity': quantity || bid.quantity,
+          'bids.$.status': 'counter_offered',
+          'bids.$.counterBy': 'buyer',
+        },
+        $push: {
+          'bids.$.counterHistory': {
+            price: counterPrice,
+            by: 'buyer',
+            at: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    return res.json({ success: true, listing: updated });
+  } catch (err) {
+    console.error('Counter respond error:', err);
+    return res.status(500).json({ error: 'Failed to respond with counter' });
+  }
+});
+
+// Accept bid by seller or buyer and create trade automatically when both accept
+router.post('/:id/bid/:bidId/accept', authMiddleware, async (req, res) => {
+  try {
+    const { party } = req.body; // 'seller' or 'buyer'
+    const listingId = req.params.id;
+    const bidId = req.params.bidId;
+
+    const listing = await Listing.findOne({ _id: listingId, 'bids._id': bidId });
+    if (!listing) return res.status(404).json({ error: 'Listing or bid not found' });
+
+    const bid = listing.bids.find(b => (b._id || b.id).toString() === bidId.toString());
+    const isSeller = listing.userId.toString() === req.user.id;
+    const isBuyer = bid.userId.toString() === req.user.id;
+    if (!(isSeller || isBuyer)) return res.status(403).json({ error: 'Unauthorized' });
+
+    const update = {};
+    if (party === 'seller' && isSeller) update['bids.$.sellerAccepted'] = true;
+    if (party === 'buyer' && isBuyer) update['bids.$.buyerAccepted'] = true;
+
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: 'Invalid party or unauthorized' });
+
+    const updated = await Listing.findOneAndUpdate(
+      { _id: listingId, 'bids._id': bidId },
+      { $set: update },
+      { new: true }
+    );
+
+    // Re-check both accepted
+    const refreshedBid = updated.bids.find(b => (b._id || b.id).toString() === bidId.toString());
+    if (refreshedBid.buyerAccepted && refreshedBid.sellerAccepted) {
+      // Create trade automatically
+      const Trade = require('../models/Trade');
+      const basePrice = Number(refreshedBid.counterPrice || refreshedBid.price);
+      let finalPrice = Number((basePrice * 1.02).toFixed(2));
+      if (basePrice >= 10) finalPrice = Math.ceil(finalPrice);
+      const fee = Number((finalPrice - basePrice).toFixed(2));
+      const tradeNumber = 'TRD-' + Date.now();
+      const trade = new Trade({
+        listingId: listing._id,
+        sellerId: listing.userId,
+        buyerId: refreshedBid.userId,
+        company: listing.company,
+        isin: listing.isin,
+        price: basePrice,
+        quantity: refreshedBid.quantity,
+        totalAmount: finalPrice * refreshedBid.quantity,
+        tradeNumber,
+        feeBreakdown: { basePrice, fee, finalPrice },
+        buyerConfirmed: false,
+        sellerConfirmed: true,
+        status: 'pending_closure',
+        bothAcceptedAt: new Date()
+      });
+      await trade.save();
+
+      // Update listing with trade reference
+      updated.tradeId = trade._id;
+      updated.status = 'pending_closure';
+      updated.acceptedBid = bidId;
+      await updated.save();
+      return res.json({ success: true, listing: updated, trade });
+    }
+
+    res.json({ success: true, listing: updated });
+
+  } catch (err) {
+    console.error('Accept bid error:', err);
+    return res.status(500).json({ error: 'Failed to accept bid' });
+  }
+});
+
 // Boost a listing (feature for 1 day)
 router.post('/:id/boost', authMiddleware, async (req, res) => {
   try {
@@ -123,6 +278,33 @@ router.post('/:id/boost', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Boost listing error:', error);
     res.status(500).json({ error: 'Failed to boost listing' });
+  }
+});
+
+// Boost with payment (simulate or real)
+router.post('/:id/boost/pay', authMiddleware, async (req, res) => {
+  try {
+    const { paymentMethod, paymentToken, simulate } = req.body;
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return res.status(404).json({ error: 'Listing not found' });
+    if (listing.userId.toString() !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
+
+    // For real integration: add Stripe/Razorpay provider here using env keys
+    // For now, support a simulate flag to mark boost without real payment
+    if (!simulate && (!paymentToken || !paymentMethod)) {
+      return res.status(400).json({ error: 'paymentMethod and paymentToken are required unless simulate=true' });
+    }
+
+    // Simulate success
+    const txRef = 'BOOST-' + Date.now();
+    listing.boosted = true;
+    listing.boostedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    listing.boostTx = { amount: 100, currency: 'INR', provider: paymentMethod || 'simulate', reference: txRef };
+    await listing.save();
+    return res.json({ success: true, listing });
+  } catch (err) {
+    console.error('Boost pay error:', err);
+    return res.status(500).json({ error: 'Failed to process boost payment' });
   }
 });
 

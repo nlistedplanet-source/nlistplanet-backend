@@ -45,6 +45,19 @@ const listingSchema = new mongoose.Schema({
     displayPrice: Number,
     quantity: Number,
     counterPrice: Number,
+    counterDisplayPrice: Number,
+    counterHistory: [{
+      price: Number,
+      by: { type: String },
+      at: { type: Date }
+    }],
+    counterBy: { type: String },
+    buyerAccepted: { type: Boolean, default: false },
+    sellerAccepted: { type: Boolean, default: false },
+    bothAccepted: { type: Boolean, default: false },
+    buyerAcceptedAt: { type: Date },
+    sellerAcceptedAt: { type: Date },
+    bothAcceptedAt: { type: Date },
     status: {
       type: String,
       enum: ['pending', 'counter_offered', 'accepted', 'rejected', 'counter_accepted_by_bidder'],
@@ -81,9 +94,18 @@ const listingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Trade'
   }
+  ,
   // Boosting/Featured listing
   boosted: { type: Boolean, default: false },
   boostedUntil: { type: Date }
+  ,
+  // Boost transaction tracking
+  boostTx: {
+    amount: { type: Number },
+    currency: { type: String, default: 'INR' },
+    provider: { type: String },
+    reference: { type: String }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Listing', listingSchema);

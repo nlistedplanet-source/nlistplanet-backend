@@ -42,13 +42,17 @@ app.use('/api/companies', require('./routes/companies'));
 app.use('/api/portfolio', require('./routes/portfolio'));
 app.use('/api/trades', require('./routes/trades'));
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB Connected'))
-.catch(err => console.error('❌ MongoDB Connection Error:', err));
+// MongoDB Connection - allow tests to manage connection when using in-memory server
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+} else {
+  console.warn('⚠️ MONGODB_URI not set - skipping DB connection (tests may use in-memory server)');
+}
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -63,6 +67,10 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
