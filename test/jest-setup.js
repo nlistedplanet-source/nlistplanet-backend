@@ -17,7 +17,7 @@ beforeAll(async () => {
   const sampleFilePath = path.resolve(uploadDir, 'sample-proof.png');
   fs.writeFileSync(sampleFilePath, 'SAMPLE PROOF DATA');
 
-  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await mongoose.connect(uri);
 });
 
 afterAll(async () => {

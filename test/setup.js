@@ -17,7 +17,7 @@ beforeAll(async () => {
   const sampleFilePath = path.resolve(uploadDir, 'sample-proof.png');
   fs.writeFileSync(sampleFilePath, 'SAMPLE PROOF DATA');
 
-  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  await mongoose.connect(uri);
 });
 
 afterAll(async () => {
@@ -43,7 +43,7 @@ beforeAll(async () => {
   const sampleFilePath = path.resolve(uploadDir, 'sample-proof.png');
   fs.writeFileSync(sampleFilePath, 'SAMPLE PROOF DATA');
 
-  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  await mongoose.connect(uri);
 });
 
 afterAll(async () => {
@@ -69,7 +69,7 @@ beforeAll(async () => {
   const sampleFilePath = path.resolve(uploadDir, 'sample-proof.png');
   fs.writeFileSync(sampleFilePath, 'SAMPLE PROOF DATA');
 
-  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  await mongoose.connect(uri);
 });
 
 afterAll(async () => {
@@ -95,7 +95,7 @@ module.exports = async () => {
   fs.mkdirSync(uploadDir, { recursive: true });
 
   // Connect mongoose
-  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  await mongoose.connect(uri);
 
   // Create a small sample file for attachments used by tests
   const sampleFilePath = path.resolve(uploadDir, 'sample.txt');

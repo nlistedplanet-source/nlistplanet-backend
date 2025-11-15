@@ -44,10 +44,7 @@ app.use('/api/trades', require('./routes/trades'));
 
 // MongoDB Connection - allow tests to manage connection when using in-memory server
 if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 } else {
