@@ -53,25 +53,36 @@ const listingSchema = new mongoose.Schema({
     bidderId: mongoose.Schema.Types.ObjectId,
     price: Number,
     displayPrice: Number,
+    originalPrice: Number,
+    currentPrice: Number,
     quantity: Number,
     counterPrice: Number,
     counterDisplayPrice: Number,
+    counterRound: { type: Number, default: 0 },
+    maxCounterRounds: { type: Number, default: 5 },
     counterHistory: [{
       price: Number,
-      by: { type: String },
-      at: { type: Date }
+      proposedBy: { type: String, enum: ['seller', 'buyer'] },
+      proposedAt: { type: Date, default: Date.now }
     }],
-    counterBy: { type: String },
-    buyerAccepted: { type: Boolean, default: false },
-    sellerAccepted: { type: Boolean, default: false },
-    bothAccepted: { type: Boolean, default: false },
-    buyerAcceptedAt: { type: Date },
-    sellerAcceptedAt: { type: Date },
-    bothAcceptedAt: { type: Date },
+    acceptedAt: { type: Date },
+    finalConfirmedAt: { type: Date },
+    rejectedAt: { type: Date },
     status: {
       type: String,
-      enum: ['pending', 'counter_offered', 'accepted', 'rejected', 'counter_accepted_by_bidder', 'both_accepted'],
-      default: 'pending'
+      enum: [
+        'pending_seller_response',
+        'accepted_by_seller',
+        'counter_by_seller',
+        'counter_by_buyer',
+        'counter_accepted_by_buyer',
+        'counter_accepted_by_seller',
+        'both_accepted',
+        'rejected_by_seller',
+        'rejected_by_buyer',
+        'expired'
+      ],
+      default: 'pending_seller_response'
     },
     createdAt: {
       type: Date,
