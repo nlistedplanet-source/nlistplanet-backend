@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile-First Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f8fafc;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Safe area for mobile notch */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Touch feedback */
+.touch-feedback:active {
+  transform: scale(0.98);
+  transition: transform 0.1s;
+}
+
+/* Animation classes */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Mobile button styles */
+.btn-mobile {
+  @apply px-6 py-3 rounded-xl font-semibold text-base touch-feedback transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white active:bg-primary-700;
+}
+
+.btn-secondary {
+  @apply bg-dark-200 text-dark-800 active:bg-dark-300;
+}
+
+/* Card styles */
+.card-mobile {
+  @apply bg-white rounded-2xl shadow-mobile p-4 touch-feedback;
+}
+
+/* Input styles */
+.input-mobile {
+  @apply w-full px-4 py-3 bg-white border border-dark-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+}
+
+/* Bottom sheet overlay */
+.bottom-sheet-overlay {
+  @apply fixed inset-0 bg-black/50 z-40 animate-fade-in;
+}
+
+.bottom-sheet {
+  @apply fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 animate-slide-up;
+  max-height: 90vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Pull to refresh indicator */
+.pull-indicator {
+  @apply absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full transition-transform duration-200;
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply bg-dark-200 animate-pulse rounded;
+}
+
+/* Badge */
+.badge {
+  @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5;
+}

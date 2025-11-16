@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Favicon</title>
+</head>
+<body>
+    <canvas id="faviconCanvas" width="32" height="32" style="border: 1px solid #ccc; image-rendering: pixelated; width: 128px; height: 128px;"></canvas>
+    
+    <script>
+        // Create a simple favicon with "UP" text for Unlisted Point
+        const canvas = document.getElementById('faviconCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background
+        ctx.fillStyle = '#1e293b'; // Dark blue-gray
+        ctx.fillRect(0, 0, 32, 32);
+        
+        // Border
+        ctx.strokeStyle = '#3b82f6'; // Blue border
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, 30, 30);
+        
+        // Text "UP"
+        ctx.fillStyle = '#60a5fa'; // Light blue
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('UP', 16, 20);
+        
+        // Convert to ICO format (simplified)
+        console.log('Favicon created! Right-click canvas and save as PNG, then convert to ICO');
+    </script>
+    
+    <div style="margin-top: 20px;">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Right-click the canvas above</li>
+            <li>Save as PNG file</li>
+            <li>Use online converter to make ICO: <a href="https://convertio.co/png-ico/" target="_blank">convertio.co/png-ico/</a></li>
+            <li>Save as favicon.ico in /public/ folder</li>
+        </ol>
+    </div>
+</body>
+</html>

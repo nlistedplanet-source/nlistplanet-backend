@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Dark Theme Logo</title>
+</head>
+<body>
+    <canvas id="logoCanvas" width="80" height="80" style="border: 1px solid #333; background: #1e293b; image-rendering: pixelated; width: 160px; height: 160px;"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('logoCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Dark theme colors matching your app
+        const darkBg = '#1e293b';      // Slate-800 (header background)
+        const bluePrimary = '#3b82f6'; // Blue-500 (accent)
+        const blueLight = '#60a5fa';   // Blue-400 (lighter blue)
+        const yellow = '#fbbf24';      // Yellow-400 (accent)
+        
+        // Clear and set dark background
+        ctx.fillStyle = darkBg;
+        ctx.fillRect(0, 0, 80, 80);
+        
+        // Outer circle border
+        ctx.strokeStyle = bluePrimary;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(40, 40, 37, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Inner circle fill with gradient effect
+        const gradient = ctx.createRadialGradient(40, 40, 10, 40, 40, 37);
+        gradient.addColorStop(0, '#334155'); // Slightly lighter than background
+        gradient.addColorStop(1, darkBg);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Draw M letter
+        ctx.fillStyle = blueLight;
+        ctx.font = 'bold 28px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('M', 40, 40);
+        
+        // Accent dot
+        ctx.fillStyle = yellow;
+        ctx.beginPath();
+        ctx.arc(58, 25, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Add subtle glow effect
+        ctx.shadowColor = bluePrimary;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = blueLight;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(40, 40, 37, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        console.log('Dark theme logo created! Right-click and save as PNG');
+    </script>
+    
+    <div style="margin-top: 20px; color: white; background: #1e293b; padding: 20px; border-radius: 8px;">
+        <h3>Dark Theme Logo Created!</h3>
+        <p>Colors used match your app theme:</p>
+        <ul>
+            <li><span style="color: #3b82f6;">■</span> Primary Blue: #3b82f6</li>
+            <li><span style="color: #60a5fa;">■</span> Light Blue: #60a5fa</li>
+            <li><span style="color: #fbbf24;">■</span> Accent Yellow: #fbbf24</li>
+            <li><span style="color: #1e293b;">■</span> Dark Background: #1e293b</li>
+        </ul>
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li>Right-click the canvas above</li>
+            <li>Save as "logo.png"</li>
+            <li>Place in /public/images/logos/ folder</li>
+        </ol>
+    </div>
+</body>
+</html>
