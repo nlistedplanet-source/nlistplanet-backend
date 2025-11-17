@@ -8,10 +8,16 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-// Ensure upload directory exists
+// Ensure upload directory exists (skip in serverless)
 const uploadDir = 'uploads/proofs';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('Could not create upload directory:', err.message);
+  }
 }
 
 // Configure multer
