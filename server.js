@@ -42,14 +42,45 @@ app.use('/api/companies', require('./routes/companies'));
 app.use('/api/portfolio', require('./routes/portfolio'));
 app.use('/api/trades', require('./routes/trades'));
 
-// MongoDB Connection - allow tests to manage connection when using in-memory server
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
-} else {
-  console.warn('⚠️ MONGODB_URI not set - skipping DB connection (tests may use in-memory server)');
+// MongoDB Connection with caching for serverless
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected && mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (process.env.MONGODB_URI) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI, {
+        bufferCommands: false,
+        maxPoolSize: 10,
+      });
+      isConnected = true;
+      console.log('✅ MongoDB Connected');
+    } catch (err) {
+      console.error('❌ MongoDB Connection Error:', err);
+      throw err;
+    }
+  } else {
+    console.warn('⚠️ MONGODB_URI not set - skipping DB connection');
+  }
+};
+
+// Connect to database on startup (for local dev)
+if (require.main === module) {
+  connectDB();
 }
+
+// Middleware to ensure DB connection for each request (serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
 
 // Health Check
 app.get('/api/health', (req, res) => {
