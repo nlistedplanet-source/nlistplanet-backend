@@ -60,6 +60,31 @@ const companiesRoutes = require('../routes/companies');
 const portfolioRoutes = require('../routes/portfolio');
 const tradesRoutes = require('../routes/trades');
 
+// Root route (must be before other routes)
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'UnlistedHub Backend API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      listings: '/api/listings'
+    }
+  });
+});
+
+// Health Check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/listings', listingsRoutes);
@@ -67,23 +92,6 @@ app.use('/api/bids', bidsRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/trades', tradesRoutes);
-
-// Health Check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Server is running',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'UnlistedHub Backend API',
-    health: '/api/health'
-  });
-});
 
 // Error Handler
 app.use((err, req, res, next) => {
