@@ -91,8 +91,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Something went wrong!' });
 });
 
-// Export for Vercel serverless
+// Export for Vercel serverless with error handling
 module.exports = async (req, res) => {
-  await connectToDatabase();
-  return app(req, res);
+  try {
+    await connectToDatabase();
+    return app(req, res);
+  } catch (error) {
+    console.error('Serverless handler error:', error);
+    return res.status(500).json({ 
+      error: 'Internal Server Error', 
+      message: error.message 
+    });
+  }
 };
